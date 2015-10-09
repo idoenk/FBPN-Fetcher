@@ -1,24 +1,29 @@
 // ==UserScript==
 // @name           Facebook-Page-Named Fetcher
 // @icon           https://www.gstatic.com/images/icons/material/product/2x/developers_32dp.png
-// @version        0.1
+// @version        0.2
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://127.0.0.1/scripts/show/Facebook-Page-Named-Fetcher
-// @dtversion      1510021530
-// @timestamp      1443774692386
+// @dtversion      1510092103
+// @timestamp      1444399416379
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @include        http://*.facebook.com/search/str/*/pages-named
 // @include        https://*.facebook.com/search/str/*/pages-named
+// @include        http://*.facebook.com/search/str/*/keywords_groups
+// @include        https://*.facebook.com/search/str/*/keywords_groups
 // @author         Idx
 // @license        (CC) by-nc-sa 3.0
 //
 // ==/UserScript==
 //
+// v0.2 - 2015-10-09 . 1444399416379
+//   Patch support for groups
+// 
 // v0.1 - 2015-10-02 . 1443774692386
 //   Init
 // --
@@ -31,7 +36,7 @@
 // Initialize Global Variables
 var gvar = function(){};
 
-gvar.sversion = 'v' + '0.1';
+gvar.sversion = 'v' + '0.2';
 gvar.scriptMeta = {};
 gvar.settings_done = null;
 gvar.auto_next_halted = null;
@@ -205,6 +210,9 @@ var INDEXDATA = {};
 
 
 function design_page(){
+  gvar.base_url = location.protocol+'://'+location.hostname;
+
+
   gvar.search_term = '';
   var $form = $('form[action*="direct_search.php"]');
   if( $form.length ){
@@ -212,6 +220,9 @@ function design_page(){
     gvar.search_term = $form.find('input[name="q"]').val();
   }
   clog("search-term="+gvar.search_term);
+
+  gvar.is_group_search = /\/keywords_groups/i.test(location.href);
+
 
   var CSS = ''
     +'.fbpn-wrapper{position:fixed; background-color: #fff; padding:2px 5px; opacity: .88; z-index:99999; top:45px; left:1px; width: auto;}'
@@ -349,7 +360,7 @@ function scan_main_container($parent){
 
         $parentbt = $el.closest("[data-bt]");
         
-        var cucok, countlike, rdata={}, databt = $parentbt.attr("data-bt");
+        var cucok, count_total, rdata={}, databt = $parentbt.attr("data-bt");
         if( databt ){
           try{
             databt = JSON.parse( databt );
@@ -376,6 +387,9 @@ function scan_main_container($parent){
             type: '',
             likes: 0
           };
+          // absolute-path
+          if( !/^https?\:\/\//.test(rdata['url']) )
+            rdata['url'] = gvar.base_url+rdata['url'];
 
           $parentmeta = $el.closest(".clearfix").parent();
           
@@ -386,16 +400,33 @@ function scan_main_container($parent){
             rdata["type"] = $el_meta.text();
           }
 
-          $el_meta = $D('.//*[contains(@href,"/likers")]', $parentmeta.get(0), true);
-          if( $el_meta ){
-            $el_meta = $( $el_meta );
-            countlike = $el_meta.text();
-            countlike = trimStr(countlike.replace(/\,/g,''));
-            if( cucok = /^(\d+)/.exec(countlike) )
-              countlike = parseFloat(cucok[1]);
+          if( !gvar.is_group_search ){
+            $el_meta = $D('.//*[contains(@href,"/likers")]', $parentmeta.get(0), true);
+            if( $el_meta ){
+              $el_meta = $( $el_meta );
+              count_total = $el_meta.text();
+              count_total = trimStr(count_total.replace(/\,/g,''));
+              if( cucok = /^(\d+)/.exec(count_total) )
+                count_total = parseFloat(cucok[1]);
 
-            if( countlike )
-              rdata["likes"] = countlike;
+              if( count_total )
+                rdata["likes"] = count_total;
+            }
+          }
+          else{
+            $el_meta = $el_meta.parent().next();
+            $el_meta = $el_meta.find(">div").last();
+            $el_meta = $el_meta.find("div:contains(' member')");
+            
+            if( $el_meta.length ){
+              count_total = $el_meta.text();
+              count_total = trimStr(count_total.replace(/\,/g,''));
+              if( cucok = /^(\d+)/.exec(count_total) )
+                count_total = parseFloat(cucok[1]);
+
+              if( count_total )
+                rdata["member"] = count_total;
+            }
           }
 
           BULKDATA.push( rdata );
