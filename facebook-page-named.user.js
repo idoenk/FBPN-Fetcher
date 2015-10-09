@@ -210,6 +210,9 @@ var INDEXDATA = {};
 
 
 function design_page(){
+  // make sure we are on the right place
+  if( !$(target_wrapper).length ) return;
+  
   gvar.base_url = location.protocol+'://'+location.hostname;
 
 
