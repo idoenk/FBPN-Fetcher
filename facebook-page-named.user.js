@@ -45,7 +45,7 @@ window.alert(new Date().getTime());
 */
 
 // development-stage
-gvar.__DEBUG__ = 1;
+gvar.__DEBUG__ = !1;
 gvar.$w = window;
 gvar.auto_next_page = false;
 
@@ -417,7 +417,7 @@ function scan_main_container($parent){
             $el_meta = $el_meta.parent().next();
             $el_meta = $el_meta.find(">div").last();
             $el_meta = $el_meta.find("div:contains(' member')");
-            
+
             if( $el_meta.length ){
               count_total = $el_meta.text();
               count_total = trimStr(count_total.replace(/\,/g,''));
