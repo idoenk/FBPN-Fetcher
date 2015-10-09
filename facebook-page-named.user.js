@@ -385,7 +385,8 @@ function scan_main_container($parent){
             name: $el.text(),
             url: $el.attr("href"),
             type: '',
-            likes: 0
+            // likes: 0
+            // member: 0
           };
           // absolute-path
           if( !/^https?\:\/\//.test(rdata['url']) )
